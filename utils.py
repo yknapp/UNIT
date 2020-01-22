@@ -8,7 +8,7 @@ from networks import Vgg16
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
 from torchvision import transforms
-from data import ImageFilelist, ImageFolder
+from data import ImageFilelist, ImageFolder, BevImageFolder, pointcloud_loader_kitti, pointcloud_loader_lyft, default_pointcloud_loader
 import torch
 import os
 import math
@@ -44,18 +44,24 @@ def get_all_data_loaders(conf):
     else:
         new_size_a = conf['new_size_a']
         new_size_b = conf['new_size_b']
+    if 'img_height' in conf and 'img_width' in conf:
+        img_height = conf['img_height']
+        img_width = conf['img_width']
+    else:
+        img_height = 480
+        img_width = 480
     height = conf['crop_image_height']
     width = conf['crop_image_width']
 
     if 'data_root' in conf:
-        train_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'trainA'), batch_size, True,
-                                              new_size_a, height, width, num_workers, True)
-        test_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'testA'), batch_size, False,
-                                             new_size_a, new_size_a, new_size_a, num_workers, True)
-        train_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'trainB'), batch_size, True,
-                                              new_size_b, height, width, num_workers, True)
-        test_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'testB'), batch_size, False,
-                                             new_size_b, new_size_b, new_size_b, num_workers, True)
+        train_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'trainA'), batch_size, img_height, img_width, True,
+                                              pointcloud_loader_lyft, new_size_a, height, width, num_workers, True)
+        test_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'testA'), batch_size, img_height, img_width, False,
+                                             pointcloud_loader_lyft, new_size_a, new_size_a, new_size_a, num_workers, True)
+        train_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'trainB'), batch_size, img_height, img_width, True,
+                                              pointcloud_loader_kitti, new_size_b, height, width, num_workers, True)
+        test_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'testB'), batch_size, img_height, img_width, False,
+                                             pointcloud_loader_kitti, new_size_b, new_size_b, new_size_b, num_workers, True)
     else:
         train_loader_a = get_data_loader_list(conf['data_folder_train_a'], conf['data_list_train_a'], batch_size, True,
                                                 new_size_a, height, width, num_workers, True)
@@ -81,16 +87,18 @@ def get_data_loader_list(root, file_list, batch_size, train, new_size=None,
     loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=train, drop_last=True, num_workers=num_workers)
     return loader
 
-def get_data_loader_folder(input_folder, batch_size, train, new_size=None,
-                           height=256, width=256, num_workers=4, crop=True):
+
+def get_data_loader_folder(input_folder, batch_size, img_height, img_width, train, loader=default_pointcloud_loader,
+                           new_size=None, height=256, width=256, num_workers=4, crop=True):
     transform_list = [transforms.ToTensor(),
                       transforms.Normalize((0.5, 0.5, 0.5),
                                            (0.5, 0.5, 0.5))]
-    transform_list = [transforms.RandomCrop((height, width))] + transform_list if crop else transform_list
-    transform_list = [transforms.Resize(new_size)] + transform_list if new_size is not None else transform_list
-    transform_list = [transforms.RandomHorizontalFlip()] + transform_list if train else transform_list
+    #transform_list = [transforms.RandomCrop((height, width))] + transform_list if crop else transform_list
+    #transform_list = [transforms.Resize(new_size)] + transform_list if new_size is not None else transform_list
+    #transform_list = [transforms.RandomHorizontalFlip()] + transform_list if train else transform_list
     transform = transforms.Compose(transform_list)
-    dataset = ImageFolder(input_folder, transform=transform)
+    #dataset = ImageFolder(input_folder, transform=transform)
+    dataset = BevImageFolder(input_folder, img_height=img_height, img_width=img_width, transform=transform, loader=loader)
     loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=train, drop_last=True, num_workers=num_workers)
     return loader
 
@@ -108,6 +116,16 @@ def eformat(f, prec):
 
 
 def __write_images(image_outputs, display_image_num, file_name):
+    # if tensor is only two-dimensional, then add zero channel to create a 3-dimensional image
+    if image_outputs[0].shape[1] == 2:
+        n, c, h, w = image_outputs[0].shape
+        padding = Variable(torch.ones(n, 1, h, w) * -1)  # -1 is a pixel value of zero
+        padding = padding.cuda()  # tensor.FloatTensor to tensor.cuda.FloatTensor so torch.cat function works
+        image_outputs = list(image_outputs)
+        for idx in range(len(image_outputs)):
+            image_outputs[idx] = torch.cat((image_outputs[idx], padding), 1)
+        image_outputs = tuple(image_outputs)
+
     image_outputs = [images.expand(-1, 3, -1, -1) for images in image_outputs] # expand gray-scale images to 3 channels
     image_tensor = torch.cat([images[:display_image_num] for images in image_outputs], 0)
     image_grid = vutils.make_grid(image_tensor.data, nrow=display_image_num, padding=0, normalize=True)
