@@ -22,9 +22,13 @@ parser.add_argument('--config', type=str, default='configs/edges2handbags_folder
 parser.add_argument('--output_path', type=str, default='.', help="outputs path")
 parser.add_argument("--resume", action="store_true")
 parser.add_argument('--trainer', type=str, default='MUNIT', help="MUNIT|UNIT")
+parser.add_argument('--seed', type=int, default=0, help="seed integer")
 opts = parser.parse_args()
 
 cudnn.benchmark = True
+
+# set seed
+torch.manual_seed(opts.seed)
 
 # Load experiment setting
 config = get_config(opts.config)
@@ -93,4 +97,3 @@ while True:
         iterations += 1
         if iterations >= max_iter:
             sys.exit('Finish training')
-
