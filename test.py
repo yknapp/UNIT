@@ -22,7 +22,7 @@ parser.add_argument('--checkpoint', type=str, help="checkpoint of autoencoders")
 parser.add_argument('--style', type=str, default='', help="style image path")
 parser.add_argument('--a2b', type=int, default=1, help="1 for a2b and others for b2a")
 parser.add_argument('--seed', type=int, default=10, help="random seed")
-parser.add_argument('--num_style',type=int, default=10, help="number of styles to sample")
+parser.add_argument('--num_style', type=int, default=10, help="number of styles to sample")
 parser.add_argument('--synchronized', action='store_true', help="whether use synchronized style code or not")
 parser.add_argument('--output_only', action='store_true', help="whether use synchronized style code or not")
 parser.add_argument('--output_path', type=str, default='.', help="path for logs, checkpoints, and VGG model weight")
@@ -98,12 +98,12 @@ with torch.no_grad():
     elif opts.trainer == 'UNIT':
         outputs = decode(content)
         outputs = (outputs + 1) / 2.
-        path = os.path.join(opts.output_folder, 'output.jpg')
+        path = os.path.join(opts.output_folder, 'output.png')
         vutils.save_image(outputs.data, path, padding=0, normalize=True)
     else:
         pass
 
     if not opts.output_only:
         # also save input images
-        vutils.save_image(image.data, os.path.join(opts.output_folder, 'input.jpg'), padding=0, normalize=True)
+        vutils.save_image(image.data, os.path.join(opts.output_folder, 'input.png'), padding=0, normalize=True)
 
