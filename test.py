@@ -100,6 +100,8 @@ with torch.no_grad():
         outputs = (outputs + 1) / 2.
         path = os.path.join(opts.output_folder, 'output.png')
         vutils.save_image(outputs.data, path, padding=0, normalize=True)
+        # npimg = outputs.data.detach().cpu().numpy() # to numpy array
+        # np.save(npimg, 'numpy_arr.npy')
     else:
         pass
 
