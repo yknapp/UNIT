@@ -30,6 +30,7 @@ cudnn.deterministic = True
 
 # set seed
 torch.manual_seed(opts.seed)
+torch.cuda.manual_seed(opts.seed)
 
 # Load experiment setting
 config = get_config(opts.config)
