@@ -36,7 +36,7 @@ import time
 # get_scheduler
 # weights_init
 
-def get_all_data_loaders(conf):
+def get_all_data_loaders(conf, seed):
     batch_size = conf['batch_size']
     num_workers = conf['num_workers']
     if 'new_size' in conf:
@@ -54,13 +54,13 @@ def get_all_data_loaders(conf):
     width = conf['crop_image_width']
 
     if 'data_root' in conf:
-        train_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'trainA'), batch_size, img_height, img_width, True,
-                                              pointcloud_loader_lyft, new_size_a, height, width, num_workers, True)
-        test_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'testA'), batch_size, img_height, img_width, False,
-                                             pointcloud_loader_lyft, new_size_a, new_size_a, new_size_a, num_workers, True)
-        train_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'trainB'), batch_size, img_height, img_width, True,
+        train_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'trainA'), batch_size, img_height, img_width, seed, True,
+                                              pointcloud_loader_kitti, new_size_a, height, width, num_workers, True)
+        test_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'testA'), batch_size, img_height, img_width, seed, False,
+                                             pointcloud_loader_kitti, new_size_a, new_size_a, new_size_a, num_workers, True)
+        train_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'trainB'), batch_size, img_height, img_width, seed, True,
                                               pointcloud_loader_kitti, new_size_b, height, width, num_workers, True)
-        test_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'testB'), batch_size, img_height, img_width, False,
+        test_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'testB'), batch_size, img_height, img_width, seed, False,
                                              pointcloud_loader_kitti, new_size_b, new_size_b, new_size_b, num_workers, True)
     else:
         train_loader_a = get_data_loader_list(conf['data_folder_train_a'], conf['data_list_train_a'], batch_size, True,
@@ -88,7 +88,7 @@ def get_data_loader_list(root, file_list, batch_size, train, new_size=None,
     return loader
 
 
-def get_data_loader_folder(input_folder, batch_size, img_height, img_width, train, loader=default_pointcloud_loader,
+def get_data_loader_folder(input_folder, batch_size, img_height, img_width, seed, train, loader=default_pointcloud_loader,
                            new_size=None, height=256, width=256, num_workers=4, crop=True):
     transform_list = [transforms.ToTensor(),
                       transforms.Normalize((0.5, 0.5, 0.5),
@@ -98,7 +98,7 @@ def get_data_loader_folder(input_folder, batch_size, img_height, img_width, trai
     #transform_list = [transforms.RandomHorizontalFlip()] + transform_list if train else transform_list
     transform = transforms.Compose(transform_list)
     #dataset = ImageFolder(input_folder, transform=transform)
-    dataset = BevImageFolder(input_folder, img_height=img_height, img_width=img_width, transform=transform, loader=loader)
+    dataset = BevImageFolder(input_folder, seed=seed, img_height=img_height, img_width=img_width, transform=transform, loader=loader)
     loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=train, drop_last=True, num_workers=num_workers)
     return loader
 

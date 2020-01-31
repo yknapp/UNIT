@@ -243,7 +243,7 @@ class ImageFolder(data.Dataset):
 
 class BevImageFolder(data.Dataset):
 
-    def __init__(self, root, transform=None, img_height=256, img_width=512, return_paths=False,
+    def __init__(self, root, seed, transform=None, img_height=256, img_width=512, return_paths=False,
                  loader=default_pointcloud_loader):
         pointclouds = sorted(make_dataset_pc(root))
         if len(pointclouds) == 0:
@@ -251,6 +251,7 @@ class BevImageFolder(data.Dataset):
                                "Supported pointcloud extensions are: " +
                                ",".join(PC_EXTENSIONS)))
 
+        np.random.seed(seed)  # set same seed as in torch
         self.root = root
         self.pointclouds = pointclouds
         self.img_height = img_height

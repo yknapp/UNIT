@@ -26,6 +26,7 @@ parser.add_argument('--seed', type=int, default=0, help="seed integer")
 opts = parser.parse_args()
 
 cudnn.benchmark = True
+cudnn.deterministic = True
 
 # set seed
 torch.manual_seed(opts.seed)
@@ -44,7 +45,7 @@ elif opts.trainer == 'UNIT':
 else:
     sys.exit("Only support MUNIT|UNIT")
 trainer.cuda()
-train_loader_a, train_loader_b, test_loader_a, test_loader_b = get_all_data_loaders(config)
+train_loader_a, train_loader_b, test_loader_a, test_loader_b = get_all_data_loaders(config, opts.seed)
 train_display_images_a = torch.stack([train_loader_a.dataset[i] for i in range(display_size)]).cuda()
 train_display_images_b = torch.stack([train_loader_b.dataset[i] for i in range(display_size)]).cuda()
 test_display_images_a = torch.stack([test_loader_a.dataset[i] for i in range(display_size)]).cuda()
