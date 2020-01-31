@@ -15,6 +15,7 @@ from torchvision import transforms
 from PIL import Image
 from data import pointcloud_loader_kitti, removePoints, makeBVFeature
 import imageio
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, help="net configuration")
@@ -44,13 +45,10 @@ opts.num_style = 1 if opts.style != '' else opts.num_style
 
 # Setup model and data loader
 config['vgg_model_path'] = opts.output_path
-if opts.trainer == 'MUNIT':
-    style_dim = config['gen']['style_dim']
-    trainer = MUNIT_Trainer(config)
-elif opts.trainer == 'UNIT':
+if opts.trainer == 'UNIT':
     trainer = UNIT_Trainer(config)
 else:
-    sys.exit("Only support MUNIT|UNIT")
+    sys.exit("Only support UNIT")
 
 try:
     state_dict = torch.load(opts.checkpoint)
@@ -63,14 +61,14 @@ except:
 
 trainer.cuda()
 trainer.eval()
-encode = trainer.gen_a.encode if opts.a2b else trainer.gen_b.encode # encode function
-style_encode = trainer.gen_b.encode if opts.a2b else trainer.gen_a.encode # encode function
-decode = trainer.gen_b.decode if opts.a2b else trainer.gen_a.decode # decode function
+encode = trainer.gen_a.encode if opts.a2b else trainer.gen_b.encode  # encode function
+style_encode = trainer.gen_b.encode if opts.a2b else trainer.gen_a.encode  # encode function
+decode = trainer.gen_b.decode if opts.a2b else trainer.gen_a.decode  # decode function
 
 if 'new_size' in config:
     new_size = config['new_size']
 else:
-    if opts.a2b==1:
+    if opts.a2b == 1:
         new_size = config['new_size_a']
     else:
         new_size = config['new_size_b']
@@ -97,8 +95,7 @@ with torch.no_grad():
         "maxZ": 1.27
     }
 
-    #input_dir_path = opts.input
-    input_dir_path = '/home/user/work/master_thesis/datasets/lyft_kitti/object/training/velodyne_test'
+    input_dir_path = opts.input
     pc_filename_list = os.listdir(input_dir_path)
     for pc_filename in pc_filename_list:
         #pc_filename = '7f469f522e4862386992055bdcbf8beaf391428681d87a439f2fa1381e9e3ad0.bin'
@@ -125,15 +122,22 @@ with torch.no_grad():
         if opts.trainer == 'UNIT':
             outputs = decode(content)
             outputs = (outputs + 1) / 2.
-            path = os.path.join(opts.output_folder, pc_filename + '_output.png')
+
+            # export as .png image
+            pc_filename_ = pc_filename.replace('.bin', '')
+            path = os.path.join(opts.output_folder, pc_filename_ + '_output.png')
             n, c, h, w = outputs.data.shape
             padding = Variable(torch.zeros(n, 1, h, w))
             padding = padding.cuda()
             original = outputs.data
             padded_inp = torch.cat((original, padding), 1)
             vutils.save_image(padded_inp, path, padding=0, normalize=True)
-            # npimg = outputs.data.detach().cpu().numpy() # to numpy array
-            # np.save(npimg, 'numpy_arr.npy')
+
+            # export as numpy .npy file
+            npimg = outputs.data.detach().cpu().numpy()[-1, :, :, :]  # to numpy array
+
+            path = os.path.join(opts.output_folder, pc_filename_ + '.npy')
+            np.save(path, npimg)
         else:
             pass
 
