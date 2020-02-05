@@ -34,6 +34,14 @@ def pointcloud_loader_lyft(path):
     return lidar_pc
 
 
+def pointcloud_loader_audi(path):
+   lidar_pc_raw = np.load(path)
+   lidar_pc = np.zeros([lidar_pc_raw['points'].shape[0], 4])
+   lidar_pc[:, :3] = lidar_pc_raw['points']
+   lidar_pc[:, 3] = lidar_pc_raw['reflectance'] / 255.
+   return lidar_pc
+
+
 def default_flist_reader(flist):
     """
     flist format: impath label\nimpath label\n ...(same to caffe's filelist)
@@ -174,7 +182,7 @@ IMG_EXTENSIONS = [
 ]
 
 PC_EXTENSIONS = [
-    '.bin'
+    '.bin', '.npz'
 ]
 
 
@@ -280,7 +288,7 @@ class BevImageFolder(data.Dataset):
         #lidar_bev[:, :, 2] = 0.0
 
         # remove intensity channel fully, since lyft doesn't provide intensity values
-        lidar_bev = lidar_bev[:, :, :2]
+        #lidar_bev = lidar_bev[:, :, :2]
         ########################
 
         if self.transform is not None:
