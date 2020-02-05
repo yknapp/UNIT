@@ -144,4 +144,7 @@ with torch.no_grad():
         if not opts.output_only:
             # also save input images
             output_filepath = os.path.join(opts.output_folder, pc_filename + '_input.png')
+            lidar_bev[:, :, 0] = (lidar_bev[:, :, 0] + 1.0) / 2.0
+            lidar_bev[:, :, 1] = (lidar_bev[:, :, 1] + 1.0) / 2.0
+            lidar_bev[:, :, 2] = 0.0
             imageio.imwrite(output_filepath, lidar_bev)
