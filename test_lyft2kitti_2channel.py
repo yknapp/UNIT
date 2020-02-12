@@ -148,3 +148,7 @@ with torch.no_grad():
             lidar_bev[:, :, 1] = (lidar_bev[:, :, 1] + 1.0) / 2.0
             lidar_bev[:, :, 2] = 0.0
             imageio.imwrite(output_filepath, lidar_bev)
+
+            # save as numpy array
+            path = os.path.join(opts.output_folder, pc_filename + '_input.npy')
+            np.save(path, lidar_bev_2channel)
