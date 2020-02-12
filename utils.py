@@ -55,9 +55,9 @@ def get_all_data_loaders(conf, seed):
 
     if 'data_root' in conf:
         train_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'trainA'), batch_size, img_height, img_width, seed, True,
-                                              pointcloud_loader_audi, new_size_a, height, width, num_workers, True)
+                                              pointcloud_loader_kitti, new_size_a, height, width, num_workers, True)
         test_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'testA'), batch_size, img_height, img_width, seed, False,
-                                             pointcloud_loader_audi, new_size_a, new_size_a, new_size_a, num_workers, True)
+                                             pointcloud_loader_kitti, new_size_a, new_size_a, new_size_a, num_workers, True)
         train_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'trainB'), batch_size, img_height, img_width, seed, True,
                                               pointcloud_loader_kitti, new_size_b, height, width, num_workers, True)
         test_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'testB'), batch_size, img_height, img_width, seed, False,
