@@ -35,11 +35,11 @@ def pointcloud_loader_lyft(path):
 
 
 def pointcloud_loader_audi(path):
-   lidar_pc_raw = np.load(path)
-   lidar_pc = np.zeros([lidar_pc_raw['points'].shape[0], 4])
-   lidar_pc[:, :3] = lidar_pc_raw['points']
-   lidar_pc[:, 3] = lidar_pc_raw['reflectance'] / 255.
-   return lidar_pc
+    lidar_pc_raw = np.load(path)
+    lidar_pc = np.zeros([lidar_pc_raw['points'].shape[0], 4])
+    lidar_pc[:, :3] = lidar_pc_raw['points']
+    lidar_pc[:, 3] = lidar_pc_raw['reflectance'] / 255.
+    return lidar_pc
 
 
 def default_flist_reader(flist):
@@ -92,7 +92,7 @@ def makeBVFeature(PointCloud_, BoundaryCond, img_height, img_width, Discretizati
     PointCloud = PointCloud[indices]
 
     # Height Map
-    heightMap = np.zeros((Height, Width))
+    heightMap = np.zeros((Height, Width), dtype=np.float32)
 
     # because of the rounding of points, there are many identical points
     _, indices = np.unique(PointCloud[:, 0:2], axis=0, return_index=True)
@@ -104,8 +104,8 @@ def makeBVFeature(PointCloud_, BoundaryCond, img_height, img_width, Discretizati
     # heightMap_normalized = (heightMap - BoundaryCond['minZ'])/abs(BoundaryCond['maxZ']-BoundaryCond['minZ'])  # Normalize to [0, 1]
 
     # Intensity Map & DensityMap
-    intensityMap = np.zeros((Height, Width))
-    densityMap = np.zeros((Height, Width))
+    intensityMap = np.zeros((Height, Width), dtype=np.float32)
+    densityMap = np.zeros((Height, Width), dtype=np.float32)
 
     # 'counts': The number of times each of the unique values comes up in the original array
     _, indices, counts = np.unique(PointCloud[:, 0:2], axis=0, return_index=True, return_counts=True)
@@ -114,7 +114,7 @@ def makeBVFeature(PointCloud_, BoundaryCond, img_height, img_width, Discretizati
     intensityMap[np.int_(PointCloud_top[:, 0]), np.int_(PointCloud_top[:, 1])] = PointCloud_top[:, 3]
     densityMap[np.int_(PointCloud_top[:, 0]), np.int_(PointCloud_top[:, 1])] = normalizedCounts
 
-    RGB_Map = np.zeros((Height - 1, Width - 1, 3))
+    RGB_Map = np.zeros((Height - 1, Width - 1, 3), dtype=np.float32)
     RGB_Map[:, :, 0] = densityMap[0:img_height, 0:img_width]  # r_map
     # RGB_Map[:, :, 1] = heightMap_normalized[0:img_height, 0:img_width]  # g_map
     RGB_Map[:, :, 1] = heightMap[0:img_height, 0:img_width]  # g_map
@@ -288,8 +288,21 @@ class BevImageFolder(data.Dataset):
         #lidar_bev[:, :, 2] = 0.0
 
         # remove intensity channel fully, since lyft doesn't provide intensity values
-        #lidar_bev = lidar_bev[:, :, :2]
+        lidar_bev = lidar_bev[:, :, :2]
         ########################
+
+        # map all float values from [0, 1] to integers [0, 255] (as in summer2winter)
+        #lidar_bev_int = np.zeros(lidar_bev.shape, dtype=np.uint8)
+        #lidar_bev_int[:, :, 0] = lidar_bev[:, :, 0] * 255
+        #lidar_bev_int[:, :, 1] = lidar_bev[:, :, 1] * 255
+        #lidar_bev_int[:, :, 2] = lidar_bev[:, :, 2] * 255
+
+        #print("1 MIN: ", np.amin(lidar_bev[:, :, 0]))
+        #print("1 MAX: ", np.amax(lidar_bev[:, :, 0]))
+        #print("2 MIN: ", np.amin(lidar_bev[:, :, 1]))
+        #print("2 MAX: ", np.amax(lidar_bev[:, :, 1]))
+        #print("3 MIN: ", np.amin(lidar_bev[:, :, 2]))
+        #print("3 MAX: ", np.amax(lidar_bev[:, :, 2]))
 
         if self.transform is not None:
             pointcloud = self.transform(lidar_bev)
