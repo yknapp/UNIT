@@ -40,6 +40,7 @@ bev_boundary = {
 }
 
 input_dir_path = opts.input
+output_dir_path = opts.output_folder
 pc_filename_list = os.listdir(input_dir_path)
 for pc_filename in pc_filename_list:
     print("processing ", pc_filename)
@@ -50,15 +51,27 @@ for pc_filename in pc_filename_list:
     lidar_bev = makeBVFeature(lidar_pc_filtered, bev_boundary, img_height, img_width,
                               discretization)  # create Bird's Eye View
     lidar_bev[:, :, 2] = 0.0
-    imageio.imwrite('%s_before.png' % pc_filename.replace('.bin', ''), lidar_bev)
+    # remove file extension
+    pc_filename = pc_filename.replace('.bin', '')
+    # save as numpy array
+    np.save(os.path.join(output_dir_path, '%s_original' % pc_filename), lidar_bev)
+    # save as images for height and density
+    output_filename_height = os.path.join(output_dir_path, '%s_original_height.png' % pc_filename)
+    output_filename_density = os.path.join(output_dir_path, '%s_original_density.png' % pc_filename)
+    imageio.imwrite(output_filename_height, lidar_bev[:, :, 1])
+    imageio.imwrite(output_filename_density, lidar_bev[:, :, 0])
 
     # remove intensity channel fully, since lyft doesn't provide intensity values
     lidar_bev_2channel = lidar_bev[:, :, :2]
 
     lidar_bev_2channel_transformed_raw = lyft2kitti_conv.transform(lidar_bev_2channel)
-    lidar_rgb = np.zeros((img_height, img_width, 3))
+    lidar_rgb = np.zeros((img_height, img_width, 3), dtype=np.float32)
     lidar_rgb[:, :, 0] = lidar_bev_2channel_transformed_raw[0, :, :]
     lidar_rgb[:, :, 1] = lidar_bev_2channel_transformed_raw[1, :, :]
-    imageio.imwrite('%s_after.png' % pc_filename.replace('.bin', ''), lidar_rgb)
-
-    sys.exit()
+    # save as numpy array
+    np.save(os.path.join(output_dir_path, '%s_transformed' % pc_filename), lidar_rgb)
+    # save as images for height and density
+    output_filename_height = os.path.join(output_dir_path, '%s_transformed_height.png' % pc_filename)
+    output_filename_density = os.path.join(output_dir_path, '%s_transformed_density.png' % pc_filename)
+    imageio.imwrite(output_filename_height, lidar_rgb[:, :, 1])
+    imageio.imwrite(output_filename_density, lidar_rgb[:, :, 0])
