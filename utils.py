@@ -125,6 +125,14 @@ def __write_images(image_outputs, display_image_num, file_name):
         for idx in range(len(image_outputs)):
             image_outputs[idx] = torch.cat((image_outputs[idx], padding), 1)
         image_outputs = tuple(image_outputs)
+    # if image is one dimensional, copy the channel to 3 dimensions
+    elif image_outputs[0].shape[1] == 1:
+        image_outputs = list(image_outputs)
+        for idx in range(len(image_outputs)):
+            padding = image_outputs[idx]
+            padding = padding.cuda()  # tensor.FloatTensor to tensor.cuda.FloatTensor so torch.cat function works
+            image_outputs[idx] = torch.cat((image_outputs[idx], padding, padding), 1)
+        image_outputs = tuple(image_outputs)
 
     image_outputs = [images.expand(-1, 3, -1, -1) for images in image_outputs] # expand gray-scale images to 3 channels
     image_tensor = torch.cat([images[:display_image_num] for images in image_outputs], 0)

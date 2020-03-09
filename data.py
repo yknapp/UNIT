@@ -92,7 +92,7 @@ def makeBVFeature(PointCloud_, BoundaryCond, img_height, img_width, Discretizati
     PointCloud = PointCloud[indices]
 
     # Height Map
-    heightMap = np.zeros((Height, Width), dtype=np.float32)
+    heightMap = np.zeros((Height, Width))
 
     # because of the rounding of points, there are many identical points
     _, indices = np.unique(PointCloud[:, 0:2], axis=0, return_index=True)
@@ -104,8 +104,8 @@ def makeBVFeature(PointCloud_, BoundaryCond, img_height, img_width, Discretizati
     # heightMap_normalized = (heightMap - BoundaryCond['minZ'])/abs(BoundaryCond['maxZ']-BoundaryCond['minZ'])  # Normalize to [0, 1]
 
     # Intensity Map & DensityMap
-    intensityMap = np.zeros((Height, Width), dtype=np.float32)
-    densityMap = np.zeros((Height, Width), dtype=np.float32)
+    intensityMap = np.zeros((Height, Width))
+    densityMap = np.zeros((Height, Width))
 
     # 'counts': The number of times each of the unique values comes up in the original array
     _, indices, counts = np.unique(PointCloud[:, 0:2], axis=0, return_index=True, return_counts=True)
@@ -114,7 +114,7 @@ def makeBVFeature(PointCloud_, BoundaryCond, img_height, img_width, Discretizati
     intensityMap[np.int_(PointCloud_top[:, 0]), np.int_(PointCloud_top[:, 1])] = PointCloud_top[:, 3]
     densityMap[np.int_(PointCloud_top[:, 0]), np.int_(PointCloud_top[:, 1])] = normalizedCounts
 
-    RGB_Map = np.zeros((Height - 1, Width - 1, 3), dtype=np.float32)
+    RGB_Map = np.zeros((Height - 1, Width - 1, 3))
     RGB_Map[:, :, 0] = densityMap[0:img_height, 0:img_width]  # r_map
     # RGB_Map[:, :, 1] = heightMap_normalized[0:img_height, 0:img_width]  # g_map
     RGB_Map[:, :, 1] = heightMap[0:img_height, 0:img_width]  # g_map
@@ -289,6 +289,10 @@ class BevImageFolder(data.Dataset):
 
         # remove intensity channel fully, since lyft doesn't provide intensity values
         lidar_bev = lidar_bev[:, :, :2]
+
+        # use only height channel
+        #lidar_bev = lidar_bev[:, :, 1]
+        #lidar_bev.shape += (1,)  # add dimension to shape (which is lost, due to only 1 channel), because UNIT code needs it
         ########################
 
         # map all float values from [0, 1] to integers [0, 255] (as in summer2winter)
