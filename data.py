@@ -70,7 +70,7 @@ def lidarimg2grid(pts_image, img_shape):
         i = int(p[0]) - 1
         j = int(p[1]) - 1
 
-        value = p[2]   # representation of depth, i.e. p[2], 1/p[2], log(p[2])
+        value = p[2] / 200   # representation of depth, i.e. p[2], 1/p[2], log(p[2])
 
         grid[i, j] = value
 
@@ -285,8 +285,9 @@ class FovImageFolder(data.Dataset):
         points_2d = calib.project_rect_to_image(rect_pts)
         pts_image, pts_xyz_mask = get_mask(rect_pts, points_2d, imgsize=fov_img_shape)
         fov_image = lidarimg2grid(pts_image, fov_img_shape)
-        #print("min: ", np.amin(fov_image))
-        #print("max: ", np.amax(fov_image))
+        print("shape_: ", fov_image.shape)
+        print("min: ", np.amin(fov_image))
+        print("max: ", np.amax(fov_image))
         fov_image = Image.fromarray(fov_image)
         #fov_image = fov_image.resize((416, 128))
         #print(fov_image.size)
