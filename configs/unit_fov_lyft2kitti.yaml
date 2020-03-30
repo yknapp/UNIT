@@ -49,7 +49,7 @@ input_dim_b: 1                              # number of image channels [1/3]
 num_workers: 8                              # number of data loading threads
 new_size: 256                               # first resize the shortest image side to this size
 crop_image_height: 256                      # random crop image of this height
-crop_image_width: 832                       # random crop image of this width
+crop_image_width: 844                       # random crop image of this width
 img_height: 256                             # height of created BEV image in pixel
-img_width: 832                              # width of created BEV image in pixel
+img_width: 844                              # width of created BEV image in pixel
 data_root: ./datasets/lyft2kitti_2/     # dataset folder location
