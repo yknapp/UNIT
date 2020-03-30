@@ -8,7 +8,7 @@ from networks import Vgg16
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
 from torchvision import transforms
-from data import ImageFilelist, ImageFolder, FovImageFolder, pointcloud_loader_kitti, pointcloud_loader_lyft, pointcloud_loader_audi, default_pointcloud_loader
+from data import ImageFilelist, ImageFolder, FovImageFolder, pointcloud_loader_kitti, pointcloud_loader_lyftkitti, pointcloud_loader_audi, default_pointcloud_loader
 import torch
 import os
 import math
