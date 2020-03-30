@@ -6,7 +6,6 @@ import torch
 import torch.utils.data as data
 import os.path
 import numpy as np
-import cv2
 
 from PIL import Image
 from dataset_calibration import KittiCalibration
@@ -20,14 +19,24 @@ def default_pointcloud_loader(path):
     n_vec = 4
     dtype = np.float32
     lidar_pc_raw = np.fromfile(path, dtype)
-    return lidar_pc_raw.reshape((-1, n_vec))
+    max_distance = 80  # max distance of lidar
+    return lidar_pc_raw.reshape((-1, n_vec)), max_distance
 
 
 def pointcloud_loader_kitti(path):
     n_vec = 4
     dtype = np.float32
     lidar_pc_raw = np.fromfile(path, dtype)
-    return lidar_pc_raw.reshape((-1, n_vec))
+    max_distance = 80  # max distance of lidar
+    return lidar_pc_raw.reshape((-1, n_vec)), max_distance
+
+
+def pointcloud_loader_lyftkitti(path):
+    n_vec = 4
+    dtype = np.float32
+    lidar_pc_raw = np.fromfile(path, dtype)
+    max_distance = 203  # max distance of lidar
+    return lidar_pc_raw.reshape((-1, n_vec)), max_distance
 
 
 def pointcloud_loader_lyft(path):
@@ -35,7 +44,8 @@ def pointcloud_loader_lyft(path):
     dtype = np.float32
     lidar_pc_raw = np.fromfile(path, dtype)
     lidar_pc = lidar_pc_raw.reshape((-1, n_vec))
-    return lidar_pc
+    max_distance = 203  # max distance of lidar
+    return lidar_pc, max_distance
 
 
 def pointcloud_loader_audi(path):
@@ -43,7 +53,8 @@ def pointcloud_loader_audi(path):
     lidar_pc = np.zeros([lidar_pc_raw['points'].shape[0], 4])
     lidar_pc[:, :3] = lidar_pc_raw['points']
     lidar_pc[:, 3] = lidar_pc_raw['reflectance'] / 255.
-    return lidar_pc
+    max_distance = 122  # max distance of lidar
+    return lidar_pc, max_distance
 
 
 def get_mask(rect_pts, points_2d, imgsize):
@@ -62,7 +73,7 @@ def get_mask(rect_pts, points_2d, imgsize):
     return pts_on_image_with_depth, rect_pts[mask,]
 
 
-def lidarimg2grid(pts_image, img_shape):
+def lidarimg2grid(pts_image, img_shape, max_distance):
     size_0 = img_shape[0]
     size_1 = img_shape[1]
     grid = np.zeros(img_shape[:2])
@@ -70,10 +81,15 @@ def lidarimg2grid(pts_image, img_shape):
         i = int(p[0]) - 1
         j = int(p[1]) - 1
 
-        value = p[2] / 200   # representation of depth, i.e. p[2], 1/p[2], log(p[2])
+        value = p[2] / max_distance   # representation of depth, i.e. p[2], 1/p[2], log(p[2])
 
         grid[i, j] = value
 
+        # add 8 pixels next to "real" pixel coordinate to make the data point bigger
+        # X: original pixel, 0: additional pixel
+        # 0 0 0
+        # 0 X 0
+        # 0 0 0
         if i + 1 < size_0 and j + 1 < size_1:
             grid[i+1, j+1] = value
         if i < size_0 and j + 1 < size_1:
@@ -91,6 +107,13 @@ def lidarimg2grid(pts_image, img_shape):
         if i + 1 < size_0 and j - 1 >= 0:
             grid[i+1, j-1] = value
 
+        # add another 9 pixels
+        # 1: additional pixels
+        #   1 1 1
+        # 1 0 0 0 1
+        # 1 0 X 0 1
+        # 1 0 0 0 1
+        #   1 1 1
         if i + 2 < size_0 and j < size_1:
             grid[i+2, j] = value
         if i < size_0 and j + 2 < size_1:
@@ -278,18 +301,15 @@ class FovImageFolder(data.Dataset):
 
     def __getitem__(self, index):
         path = self.pointclouds[index]
-        lidar = self.loader(path)
+        lidar, max_distance = self.loader(path)
         calib = KittiCalibration()
         fov_img_shape = (1242, 375)  # image resolution of KITTI rgb camera, on which lidars get mapped
         rect_pts = calib.project_velo_to_rect(lidar[:, 0:3])
         points_2d = calib.project_rect_to_image(rect_pts)
         pts_image, pts_xyz_mask = get_mask(rect_pts, points_2d, imgsize=fov_img_shape)
-        fov_image = lidarimg2grid(pts_image, fov_img_shape)
+        fov_image = lidarimg2grid(pts_image, fov_img_shape, max_distance)
+        #fov_image = fov_image[:, 195:1002]  # audi crop
         fov_image = Image.fromarray(fov_image)
-        #fov_image = fov_image.resize((416, 128))
-        #print(fov_image.size)
-
-        #fov_image.shape += (1,)  # add dimension to shape (which is lost, due to only 1 channel), because UNIT code needs it
 
         if self.transform is not None:
             pointcloud = self.transform(fov_image)
