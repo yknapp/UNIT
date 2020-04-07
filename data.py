@@ -213,7 +213,7 @@ IMG_EXTENSIONS = [
 ]
 
 PC_EXTENSIONS = [
-    '.bin', '.npz'
+    '.bin', '.npz', '.npy'
 ]
 
 
@@ -301,15 +301,17 @@ class FovImageFolder(data.Dataset):
 
     def __getitem__(self, index):
         path = self.pointclouds[index]
-        lidar, max_distance = self.loader(path)
-        calib = KittiCalibration()
-        fov_img_shape = (1242, 375)  # image resolution of KITTI rgb camera, on which lidars get mapped
-        rect_pts = calib.project_velo_to_rect(lidar[:, 0:3])
-        points_2d = calib.project_rect_to_image(rect_pts)
-        pts_image, pts_xyz_mask = get_mask(rect_pts, points_2d, imgsize=fov_img_shape)
-        fov_image = lidarimg2grid(pts_image, fov_img_shape, max_distance)
-        #fov_image = fov_image[:, 195:1002]  # audi crop
-        fov_image = Image.fromarray(fov_image)
+        #lidar, max_distance = self.loader(path)
+        #calib = KittiCalibration()
+        #fov_img_shape = (1242, 375)  # image resolution of KITTI rgb camera, on which lidars get mapped
+        #rect_pts = calib.project_velo_to_rect(lidar[:, 0:3])
+        #points_2d = calib.project_rect_to_image(rect_pts)
+        #pts_image, pts_xyz_mask = get_mask(rect_pts, points_2d, imgsize=fov_img_shape)
+        #fov_image = lidarimg2grid(pts_image, fov_img_shape, max_distance)
+
+        fov_image = np.load(path)
+        fov_image = Image.fromarray(fov_image)  # convert to PIL image, so the transformation of utils.py can be applied
+        #fov_image = fov_image.crop((195, 0, 1002, 375))  # crop in case of audi dataset
 
         if self.transform is not None:
             pointcloud = self.transform(fov_image)
