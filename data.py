@@ -26,6 +26,15 @@ def pointcloud_loader_kitti(path):
     return lidar_pc_raw.reshape((-1, n_vec))
 
 
+def pointcloud_loader_lyftkitti(path):
+    n_vec = 4
+    dtype = np.float32
+    lidar_pc_raw = np.fromfile(path, dtype)
+    lidar_pc_raw = lidar_pc_raw.reshape((-1, n_vec))
+    lidar_pc_raw[:, 3] = 0.0  # lyft doesn't provide intensity values, so they are always set to 100.0
+    return lidar_pc_raw
+
+
 def pointcloud_loader_lyft(path):
     n_vec = 5
     dtype = np.float32
@@ -288,7 +297,7 @@ class BevImageFolder(data.Dataset):
         #lidar_bev[:, :, 2] = 0.0
 
         # remove intensity channel fully, since lyft doesn't provide intensity values
-        lidar_bev = lidar_bev[:, :, :2]
+        #lidar_bev = lidar_bev[:, :, :2]
 
         # use only height channel
         #lidar_bev = lidar_bev[:, :, 1]
