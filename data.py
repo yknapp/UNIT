@@ -26,6 +26,14 @@ def pointcloud_loader_kitti(path):
     return lidar_pc_raw.reshape((-1, n_vec))
 
 
+def pointcloud_loader_kitti_fov(path):
+    n_vec = 4
+    dtype = np.float32
+    lidar_pc_raw = np.fromfile(path, dtype)
+    lidar_pc_raw_reshaped = lidar_pc_raw.reshape((-1, n_vec))
+    lidar_pc_raw_reshaped_fov = remove_fov_points(lidar_pc_raw_reshaped)
+    return lidar_pc_raw_reshaped_fov
+
 def pointcloud_loader_lyftkitti(path):
     n_vec = 4
     dtype = np.float32
@@ -85,6 +93,45 @@ def removePoints(PointCloud, BoundaryCond):
     PointCloud = PointCloud[mask]
     PointCloud[:, 2] = PointCloud[:, 2] - minZ
     return PointCloud
+
+
+def remove_fov_points(lidar_data):
+    b = lidar_data.copy()
+    pts_3d_velo = b[:, 0:3]
+
+    V2C = np.array([
+            [7.49916597e-03, -9.99971248e-01, -8.65110297e-04, -6.71807577e-03],
+            [1.18652889e-02, 9.54520517e-04, -9.99910318e-01, -7.33152811e-02],
+            [9.99882833e-01, 7.49141178e-03, 1.18719929e-02, -2.78557062e-01]
+    ])
+    R0 = np.array([
+            [0.99992475, 0.00975976, -0.00734152],
+            [-0.0097913, 0.99994262, -0.00430371],
+            [0.00729911, 0.0043753, 0.99996319]
+    ])
+    P = np.array([[719.787081, 0., 608.463003, 44.9538775],
+                      [0., 719.787081, 174.545111, 0.1066855],
+                      [0., 0., 1., 3.0106472e-03]
+    ])
+
+    # project 3D lidar to 2D camera coordinates
+    pts_3d_velo = np.hstack((pts_3d_velo, np.ones((pts_3d_velo.shape[0], 1), dtype=np.float32)))
+    pts_3d_ref = np.dot(pts_3d_velo, np.transpose(V2C))
+    pts_3d_rect = np.transpose(np.dot(R0, np.transpose(pts_3d_ref)))
+    pts_3d_rect = np.hstack((pts_3d_rect, np.ones((pts_3d_rect.shape[0], 1), dtype=np.float32)))
+    pts_2d_ = np.dot(pts_3d_rect, np.transpose(P))  # nx3
+    pts_2d_[:, 0] /= pts_2d_[:, 2]
+    pts_2d_[:, 1] /= pts_2d_[:, 2]
+    pts_2d = pts_2d_[:, 0:2]
+
+    # crop FOV
+    fov_inds = (
+            (pts_2d[:, 0] < 1000)
+            & (pts_2d[:, 0] >= 200)
+    )
+    fov_inds = fov_inds & (b[:, 0] > 6.0)
+    b2 = b[fov_inds, :]
+    return b2
 
 
 def makeBVFeature(PointCloud_, BoundaryCond, img_height, img_width, Discretization):
