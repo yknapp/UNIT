@@ -339,6 +339,27 @@ class BevImageFolder(data.Dataset):
         discretization = (self.bev_boundary["maxX"] - self.bev_boundary["minX"])/self.img_height
         lidar_bev = makeBVFeature(lidar_pc_filtered, self.bev_boundary, self.img_height, self.img_width, discretization)  # create Bird's Eye View
 
+
+
+
+
+        ################################################################################################################################################
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
+        # ALWAYS CHANGE:
+        # - LOADER IN UTILS:
+        #   => FÜR LYFT:
+        #      - LYFT_KITTI LOADER FÜR A
+        #      - KITTI_LOADER FÜR B
+        #   => FÜR AUDI:
+        #      - AUDI_LOADER FÜR A
+        #      - KITTI_FOV_LOADER FÜR B
+        # - NUMBER AND ORDER OF CHANNELS (SIEHE UNTEN)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
+        ################################################################################################################################################
+
+
+
+
         ########################
         # set intensity to zero since lyft doesn't provide intensity values
         #lidar_bev[:, :, 2] = 0.0
@@ -347,8 +368,8 @@ class BevImageFolder(data.Dataset):
         #lidar_bev = lidar_bev[:, :, :2]
 
         # use only height channel
-        #lidar_bev = lidar_bev[:, :, 1]
-        #lidar_bev.shape += (1,)  # add dimension to shape (which is lost, due to only 1 channel), because UNIT code needs it
+        lidar_bev = lidar_bev[:, :, 1]
+        lidar_bev.shape += (1,)  # add dimension to shape (which is lost, due to only 1 channel), because UNIT code needs it
         ########################
 
         # map all float values from [0, 1] to integers [0, 255] (as in summer2winter)
